@@ -1,0 +1,4 @@
+full_name,email,password,phone,address,membership_type,membership_start,membership_end,height,weight,fitness_goals,emergency_contact,emergency_phone
+John Doe,john.doe@example.com,pass123,555-123-4567,"123 Main St, Anytown, USA",premium,2026-03-01,2026-04-01,180,75,"Build muscle, lose fat",Jane Doe,555-987-6543
+Jane Smith,jane.smith@example.com,,555-222-3333,"456 Oak Ave, Othertown, USA",basic,2026-03-15,2026-04-15,165,60,"Improve flexibility",Bob Smith,555-444-5555
+Mike Johnson,mike.j@example.com,secure456,555-777-8888,"789 Pine Rd, Somewhere, USA",vip,2026-03-10,2026-04-10,190,85,"Strength training",Sarah Johnson,555-999-0000
