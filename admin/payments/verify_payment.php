@@ -7,12 +7,14 @@ $razorpay_id = $_GET['razorpay_id'];
 
 try{
 
-$stmt = $pdo->prepare("UPDATE payments 
+$stmt = $pdo->prepare("
+UPDATE payments 
 SET 
 status='paid',
 payment_method='razorpay',
-transaction_id=? 
-WHERE id=?");
+transaction_id=?
+WHERE id=?
+");
 
 $stmt->execute([$razorpay_id,$payment_id]);
 

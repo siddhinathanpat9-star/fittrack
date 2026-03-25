@@ -595,7 +595,8 @@ $page_title = 'Manage Payments - ' . APP_NAME;
     'razorpay' => 'fa-bolt'
 ];
                                                 
-                                                $icon = $method_icons[$payment['payment_method']] ?? 'fa-money-bill-wave';
+                                                $method = $payment['payment_method'] ?? 'cash';
+$icon = $method_icons[$method] ?? 'fa-money-bill-wave';
                                                 ?>
                                                 <span class="badge badge-secondary">
                                                     <i class="fas <?php echo $icon; ?> mr-1"></i>
