@@ -403,58 +403,74 @@ title="View Receipt">
             $('#logoutModal').modal('show');
         }
     </script>
-    <script>
 
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<script>
+
+// PLAN PAYMENT
 $('.pay-btn').click(function(){
 
-$('.pay-history-btn').click(function(){
-
-var payment_id = $(this).data('id');
 var amount = $(this).data('amount') * 100;
+var plan = $(this).data('plan');
 
 var options = {
-"key": "rzp_test_SRQKNs34F8ti57",
-"amount": amount,
-"currency": "INR",
-"name": "FitTrack Gym",
-"description": "Membership Payment",
-"handler": function (response){
+key: "rzp_test_SRQKNs34F8ti57",
+amount: amount,
+currency: "INR",
+name: "FitTrack Gym",
+description: plan + " Membership",
+
+handler: function (response){
 
 alert("Payment Successful\nPayment ID: " + response.razorpay_payment_id);
 
-window.location.href="verify_payment.php?payment_id="+payment_id+"&razorpay_id="+response.razorpay_payment_id;
+window.location.href =
+"verify_payment.php?razorpay_payment_id="+response.razorpay_payment_id+
+"&amount="+(amount/100)+
+"&plan="+encodeURIComponent(plan);
 
 }
+
 };
 
 var rzp = new Razorpay(options);
 rzp.open();
 
 });
-    var amount = $(this).data('amount') * 100; // Razorpay paise
-    var plan = $(this).data('plan');
 
-    var options = {
-        "key": "rzp_test_SRQKNs34F8ti57",
-        "amount": amount,
-        "currency": "INR",
-        "name": "FitTrack Gym",
-        "description": plan + " Membership",
-        "handler": function (response){
 
-            alert("Payment Successful\nPayment ID: " + response.razorpay_payment_id);
+// HISTORY PAYMENT
+$('.pay-history-btn').click(function(){
 
-            window.location.href="success.php?payment_id="+response.razorpay_payment_id;
+var payment_id = $(this).data('id');
+var amount = $(this).data('amount') * 100;
 
-        }
-    };
+var options = {
+key: "rzp_test_SRQKNs34F8ti57",
+amount: amount,
+currency: "INR",
+name: "FitTrack Gym",
+description: "Membership Payment",
 
-    var rzp = new Razorpay(options);
-    rzp.open();
+handler: function (response){
+
+alert("Payment Successful\nPayment ID: " + response.razorpay_payment_id);
+
+window.location.href =
+"verify_payment.php?payment_id="+payment_id+
+"&razorpay_payment_id="+response.razorpay_payment_id+
+"&amount="+(amount/100);
+
+}
+
+};
+
+var rzp = new Razorpay(options);
+rzp.open();
 
 });
 
 </script>
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </body>
-</html>
+</html>   

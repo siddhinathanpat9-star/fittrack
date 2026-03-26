@@ -50,10 +50,10 @@ if (!defined('BASE_URL')) {
 define('SMTP_HOST', 'smtp.gmail.com');          // SMTP server address
 define('SMTP_PORT', 587);                        // Port (587 for TLS, 465 for SSL)
 define('SMTP_SECURE', 'tls');                    // Encryption: 'tls' or 'ssl'
-define('SMTP_USERNAME', 'your-email@gmail.com'); // SMTP username (full email)
-define('SMTP_PASSWORD', 'your-app-password');    // SMTP password (app password for Gmail)
-define('SMTP_FROM_EMAIL', 'noreply@fittrack.com'); // Default from address
-define('SMTP_FROM_NAME', APP_NAME);               // Default from name
+define('SMTP_USERNAME', 'ajayjamale2@gmail.com'); // SMTP username (full email)
+define('SMTP_PASSWORD', 'waky trsz wjid olhz');    // SMTP password (app password for Gmail)
+define('SMTP_FROM_EMAIL', 'ajayjamale2@gmail.com'); // Default from address
+define('SMTP_FROM_NAME', 'FitTrack');               // Default from name
 
 // ------------------------------------------------------------------------
 // Razorpay Configuration (for online payments)

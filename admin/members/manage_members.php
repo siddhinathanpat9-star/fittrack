@@ -53,6 +53,46 @@ if (isset($_POST['update_status'])) {
     }
 }
 
+// Handle member deletion
+if (isset($_POST['delete_member'])) {
+    try {
+        $user_id = $_POST['user_id'];
+        
+        // Begin transaction to ensure data integrity
+        $pdo->beginTransaction();
+        
+        // Delete related records (adjust according to your database schema)
+        // Payments
+        $stmt = $pdo->prepare("DELETE FROM payments WHERE member_id = ?");
+        $stmt->execute([$user_id]);
+        
+        // Attendance
+        $stmt = $pdo->prepare("DELETE FROM attendance WHERE user_id = ?");
+        $stmt->execute([$user_id]);
+        
+        // Workout plans (if table exists)
+        $stmt = $pdo->prepare("DELETE FROM workout_plans WHERE member_id = ?");
+        $stmt->execute([$user_id]);
+        
+        // Membership details
+        $stmt = $pdo->prepare("DELETE FROM members WHERE user_id = ?");
+        $stmt->execute([$user_id]);
+        
+        // Finally, delete the user
+        $stmt = $pdo->prepare("DELETE FROM users WHERE id = ? AND user_type = 'member'");
+        $stmt->execute([$user_id]);
+        
+        $pdo->commit();
+        
+        Session::setFlash('success', 'Member deleted successfully');
+        header('Location: manage_members.php');
+        exit();
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        $error = "Error deleting member: " . $e->getMessage();
+    }
+}
+
 // Get filter parameters
 $membership_filter = $_GET['membership'] ?? '';
 $status_filter = $_GET['status'] ?? '';
@@ -410,7 +450,7 @@ $page_title = 'Manage Members - ' . APP_NAME;
                             <div class="table-responsive">
                                 <table class="table table-hover" id="membersTable">
                                     <thead>
-                                        <tr>
+                                        32
                                             <th>ID</th>
                                             <th>Member</th>
                                             <th>Contact</th>
@@ -508,6 +548,11 @@ $page_title = 'Manage Members - ' . APP_NAME;
                                                        class="btn btn-sm btn-info">
                                                         <i class="fas fa-eye"></i>
                                                     </a>
+                                                    <button class="btn btn-sm btn-danger" 
+                                                            data-toggle="modal" 
+                                                            data-target="#deleteModal<?php echo $member['id']; ?>">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -578,6 +623,35 @@ $page_title = 'Manage Members - ' . APP_NAME;
             </div>
         </div>
     </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteModal<?php echo $member['id']; ?>" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel<?php echo $member['id']; ?>" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <form method="POST">
+                    <input type="hidden" name="user_id" value="<?php echo $member['id']; ?>">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title" id="deleteModalLabel<?php echo $member['id']; ?>">
+                            <i class="fas fa-exclamation-triangle"></i> Confirm Deletion
+                        </h5>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to delete <strong><?php echo htmlspecialchars($member['full_name']); ?></strong>?</p>
+                        <p class="text-danger">This action cannot be undone and will remove all associated data (payments, attendance, workout plans, etc.).</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                        <button type="submit" name="delete_member" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> Delete Member
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
     <?php endforeach; ?>
 
     <!-- Logout Modal -->
@@ -630,9 +704,8 @@ $page_title = 'Manage Members - ' . APP_NAME;
                 ]
             });
 
-            // Confirmation for status changes
+            // Confirmation for status changes (optional - we already have a modal for delete)
             $('.status-select').on('change', function() {
-                var userId = $(this).data('user-id');
                 var newStatus = $(this).val();
                 var userName = $(this).closest('tr').find('td:eq(1)').text().trim();
                 return confirm('Are you sure you want to change status for ' + userName + ' to ' + newStatus + '?');

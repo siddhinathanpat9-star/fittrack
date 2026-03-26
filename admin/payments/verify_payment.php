@@ -1,29 +1,32 @@
 <?php
 
-require_once '../../includes/config.php';
+require_once '../includes/config.php';
+require_once '../includes/session.php';
 
-$payment_id = $_GET['payment_id'];
-$razorpay_id = $_GET['razorpay_id'];
+if(!Session::isMember()){
+header("Location: ../login.php");
+exit();
+}
 
-try{
+$member_id = Session::userId();
+
+$razorpay_id = $_GET['razorpay_id'] ?? '';
+$payment_id = $_GET['payment_id'] ?? '';
+
+if($razorpay_id && $payment_id){
 
 $stmt = $pdo->prepare("
-UPDATE payments 
-SET 
-status='paid',
+UPDATE payments
+SET status='paid',
 payment_method='razorpay',
-transaction_id=?
+transaction_id=?,
+payment_date=NOW()
 WHERE id=?
 ");
 
 $stmt->execute([$razorpay_id,$payment_id]);
 
-header("Location: manage_payments.php?success=1");
-
-}catch(Exception $e){
-
-echo "Error : ".$e->getMessage();
-
 }
 
-?>
+header("Location: payments.php");
+exit();
