@@ -242,7 +242,7 @@ $page_title = 'Trainer Dashboard - ' . APP_NAME;
                                 <p><?php echo $trainer['experience_years'] ?? 0; ?> years</p>
                             </div>
                             <div class="col-md-2">
-                                <strong><i class="fas fa-dollar-sign mr-2"></i>Hourly Rate</strong>
+                                <strong><i class="fas fa-rupee-sign mr-2"></i>Hourly Rate</strong>
                                 <p>₹<?php echo number_format($trainer['hourly_rate'] ?? 0, 2); ?></p>
                             </div>
                             <div class="col-md-5">

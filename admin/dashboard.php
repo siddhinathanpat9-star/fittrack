@@ -99,14 +99,21 @@ $page_title = 'Dashboard - ' . APP_NAME;
                 <div class="ml-auto">
                     <!-- Notifications dropdown (static example) -->
                     <div class="dropdown d-inline-block">
-                        <button class="btn btn-light dropdown-toggle" data-toggle="dropdown"><i class="fas fa-bell"></i><span class="badge badge-danger badge-pill">3</span></button>
+                        <button class="btn btn-light dropdown-toggle" data-toggle="dropdown"><i class="fas fa-bell"></i><span class="badge badge-danger badge-pill">6</span></button>
                         <div class="dropdown-menu dropdown-menu-right" style="width:300px">
-                            <div class="dropdown-header bg-light">Notifications</div>
-                            <a class="dropdown-item" href="#"><strong>New member registered</strong><br><small class="text-muted">2 minutes ago</small></a>
-                            <a class="dropdown-item" href="#"><strong>Payment received</strong><br><small class="text-muted">1 hour ago</small></a>
-                            <a class="dropdown-item" href="#"><strong>5 memberships expiring soon</strong><br><small class="text-muted">3 hours ago</small></a>
+                            <div class="dropdown-header bg-light">
+                                <strong>System Notifications</strong>
+                                <p style="font-size: 12px; margin: 5px 0 0 0; color: #666;">You will receive updates about:</p>
+                                <small style="color: #999;">Members • Payments • Classes • Trainers</small>
+                            </div>
+                            <a class="dropdown-item" href="#"><i class="fas fa-user-plus text-success"></i> <strong>New member registered</strong><br><small class="text-muted">2 minutes ago</small></a>
+                            <a class="dropdown-item" href="#"><i class="fas fa-money-bill-wave text-success"></i> <strong>Payment received</strong><br><small class="text-muted">1 hour ago</small></a>
+                            <a class="dropdown-item" href="#"><i class="fas fa-calendar-times text-warning"></i> <strong>5 memberships expiring soon</strong><br><small class="text-muted">3 hours ago</small></a>
+                            <a class="dropdown-item" href="#"><i class="fas fa-exclamation-circle text-danger"></i> <strong>Class cancelled by trainer</strong><br><small class="text-muted">5 hours ago</small></a>
+                            <a class="dropdown-item" href="#"><i class="fas fa-file-invoice-dollar text-info"></i> <strong>Overdue payment pending</strong><br><small class="text-muted">Yesterday</small></a>
+                            <a class="dropdown-item" href="#"><i class="fas fa-user-check text-primary"></i> <strong>New trainer joined</strong><br><small class="text-muted">2 days ago</small></a>
                             <div class="dropdown-divider"></div>
-                            <a class="dropdown-item text-center" href="#">View all</a>
+                            <a class="dropdown-item text-center" href="notifications/manage_notifications.php">View all</a>
                         </div>
                     </div>
                     <!-- User dropdown -->

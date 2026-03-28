@@ -282,7 +282,7 @@ $page_title = 'My Profile - ' . APP_NAME;
                                            value="<?php echo $trainer['experience_years'] ?? 0; ?>" min="0">
                                 </div>
                                 <div class="form-group col-md-3">
-                                    <label for="hourly_rate" class="form-label">Hourly Rate ($)</label>
+                                    <label for="hourly_rate" class="form-label">Hourly Rate (₹)</label>
                                     <input type="number" step="0.01" class="form-control" id="hourly_rate" name="hourly_rate"
                                            value="<?php echo $trainer['hourly_rate'] ?? 0; ?>" min="0">
                                 </div>

@@ -2,7 +2,6 @@
 /**
  * admin/members/renew_membership.php - Renew a member's subscription
  */
-
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 ob_start();
@@ -11,59 +10,55 @@ require_once __DIR__ . '/../../includes/config.php';
 require_once __DIR__ . '/../../includes/session.php';
 require_once __DIR__ . '/../../includes/functions.php';
 
-// Ensure only admin can access
 Session::requireAdmin();
 
 $error = '';
 $success = '';
 
-// Get member ID from URL (this is the user ID)
 $member_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if ($member_id <= 0) {
+    Session::setFlash('error', 'Invalid member ID.');
     header('Location: manage_members.php');
     exit;
 }
 
-// Fetch member details (including user and membership data)
+$member = null;
+$plans = [];
+
 try {
-    // Use 'plan_id' as the foreign key in members table (alias as membership_plan_id for consistency)
+    // Fetch member details – match your actual table columns
     $stmt = $pdo->prepare("
-        SELECT u.id AS user_id, u.full_name, u.email, u.username, u.phone, u.status,
-               m.id AS membership_record_id, m.plan_id AS membership_plan_id, 
-               m.join_date, m.expiry_date, m.membership_type,
-               mp.name AS plan_name, mp.duration AS duration_months, mp.price
+        SELECT u.id AS user_id, u.full_name, u.email, u.username, u.status,
+               m.id AS membership_record_id, m.membership_type, m.start_date, m.end_date
         FROM users u
         LEFT JOIN members m ON u.id = m.user_id
-        LEFT JOIN membership_plans mp ON m.plan_id = mp.id
         WHERE u.id = ? AND u.user_type = 'member'
     ");
     $stmt->execute([$member_id]);
     $member = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$member) {
-        $_SESSION['error'] = 'Member not found.';
-        header('Location: manage_members.php');
-        exit;
+        throw new Exception('Member not found.');
     }
 
-    // Fetch available membership plans
+    // Fetch active membership plans
     $plans_stmt = $pdo->query("
-        SELECT id, name AS plan_name, duration AS duration_months, price, description 
+        SELECT id,name AS plan_name , duration_days, price, description 
         FROM membership_plans 
         WHERE status = 'active' 
-        ORDER BY duration
+        ORDER BY duration_days
     ");
     $plans = $plans_stmt->fetchAll(PDO::FETCH_ASSOC);
+
 } catch (Exception $e) {
-    // Log the error internally
     error_log("Error in renew_membership.php: " . $e->getMessage());
-    $error = "Failed to load member data. Please try again later.";
+    $error = "Failed to load member data. " . $e->getMessage();
     $member = null;
     $plans = [];
 }
 
-// Process renewal form submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+// Process renewal
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $member) {
     $plan_id = isset($_POST['plan_id']) ? (int)$_POST['plan_id'] : 0;
     $payment_method = isset($_POST['payment_method']) ? trim($_POST['payment_method']) : 'cash';
     $amount_paid = isset($_POST['amount_paid']) ? floatval($_POST['amount_paid']) : 0;
@@ -75,11 +70,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Please enter a valid amount.';
     } else {
         try {
-            // Start transaction
             $pdo->beginTransaction();
 
             // Get plan details
-            $plan_stmt = $pdo->prepare("SELECT duration, price, name FROM membership_plans WHERE id = ?");
+            $plan_stmt = $pdo->prepare("SELECT name AS plan_name, duration_days, price FROM membership_plans WHERE id = ?");
             $plan_stmt->execute([$plan_id]);
             $plan = $plan_stmt->fetch(PDO::FETCH_ASSOC);
             if (!$plan) {
@@ -87,40 +81,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             // Calculate new expiry date
-            $current_expiry = $member['expiry_date'];
-            $current_date = date('Y-m-d');
-            if ($current_expiry && strtotime($current_expiry) > strtotime($current_date)) {
-                $new_expiry = date('Y-m-d', strtotime("{$current_expiry} + {$plan['duration']} months"));
+            $current_end = $member['end_date'] ?? null;
+            $today = new DateTime();
+            if ($current_end && new DateTime($current_end) > $today) {
+                // Not expired: extend from current end date
+                $new_end_date = (new DateTime($current_end))->modify("+{$plan['duration_days']} days")->format('Y-m-d');
+                $start_date = $member['start_date'];
             } else {
-                $new_expiry = date('Y-m-d', strtotime("+{$plan['duration']} months"));
+                // Expired or no membership: start from today
+                $new_end_date = $today->modify("+{$plan['duration_days']} days")->format('Y-m-d');
+                $start_date = date('Y-m-d');
             }
 
-            // Update member's plan and expiry date
-            $update_stmt = $pdo->prepare("
-                UPDATE members 
-                SET plan_id = ?, expiry_date = ?, membership_type = ?, updated_at = NOW()
+            // Update member record (no plan_id column, just membership_type)
+            if ($member['membership_record_id']) {
+                $update_stmt = $pdo->prepare("
+                 UPDATE members 
+                SET membership_type = ?, start_date = ?, end_date = ?
                 WHERE user_id = ?
-            ");
-            $update_stmt->execute([$plan_id, $new_expiry, $plan['name'], $member['user_id']]);
+                ");
+                $update_stmt->execute([$plan['plan_name'], $start_date, $new_end_date, $member['user_id']]);
+            } else {
+                $insert_stmt = $pdo->prepare("
+                   INSERT INTO members (user_id, membership_type, start_date, end_date) 
+                 VALUES (?, ?, ?, ?)
+                ");
+                $insert_stmt->execute([$member['user_id'], $plan['plan_name'], $start_date, $new_end_date]);
+            }
+
+            // Ensure user status is active
+            $pdo->prepare("UPDATE users SET status = 'active' WHERE id = ?")->execute([$member['user_id']]);
 
             // Record payment
-            // Assumption: payments.member_id references users.id (the member's user ID)
-            // If your schema uses members.id, change to $member['membership_record_id'].
             $receipt_number = 'RCP' . date('Ymd') . rand(1000, 9999);
-            $payment_stmt = $pdo->prepare("
-                INSERT INTO payments (member_id, amount, payment_date, payment_method, transaction_id, status, payment_for, notes, receipt_number)
-                VALUES (?, ?, NOW(), ?, ?, 'completed', 'membership', ?, ?)
-            ");
+            $payment_stmt = $pdo->prepare("INSERT INTO payments (member_id, amount, payment_date, payment_method, notes, recorded_by) VALUES (?, ?, NOW(), ?, ?, ?)");
             $payment_stmt->execute([
-                $member['user_id'],           // Adjust if needed
+                $member['user_id'],
                 $amount_paid,
                 $payment_method,
-                null,                         // transaction_id placeholder
                 $notes,
-                $receipt_number
+                $_SESSION['user_id']
             ]);
 
-            // Log activity (optional, skip if table missing)
+            // Optional: log activity (skip if table missing)
             try {
                 $log_stmt = $pdo->prepare("
                     INSERT INTO activity_logs (user_id, action, details, ip_address, created_at) 
@@ -128,17 +131,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ");
                 $log_stmt->execute([
                     $_SESSION['user_id'],
-                    "Renewed membership for member ID {$member['user_id']} (Plan ID {$plan_id})",
+                    "Renewed membership for member ID {$member['user_id']} (Plan: {$plan['plan_name']})",
                     $_SERVER['REMOTE_ADDR']
                 ]);
             } catch (Exception $log_e) {
-                // Non-critical, just log error
                 error_log("Failed to log activity: " . $log_e->getMessage());
             }
 
             $pdo->commit();
 
-            $_SESSION['flash_success'] = "Membership renewed successfully! New expiry date: " . date('d M Y', strtotime($new_expiry));
+            Session::setFlash('success', "Membership renewed successfully! New expiry date: " . date('d M Y', strtotime($new_end_date)));
             header("Location: manage_members.php");
             exit;
 
@@ -162,13 +164,12 @@ $page_title = 'Renew Membership - ' . APP_NAME;
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
-        /* CSS unchanged – same as before */
+        /* Same styles as dashboard (keep exactly as in original) */
         *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',sans-serif;background:#f8f9fa;overflow-x:hidden}.wrapper{display:flex;width:100%;align-items:stretch;min-height:100vh}#sidebar{min-width:280px;max-width:280px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;transition:.3s;box-shadow:2px 0 10px rgba(0,0,0,0.1);position:relative;z-index:1000}#sidebar.active{margin-left:-280px}#sidebar .sidebar-header{padding:30px 20px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.1)}#sidebar .sidebar-header h3{font-size:1.8rem;font-weight:600}#sidebar ul.components{padding:20px 0}#sidebar ul li a{padding:15px 25px;font-size:1rem;display:block;color:#fff;text-decoration:none;transition:.3s;border-left:3px solid transparent}#sidebar ul li a:hover{background:rgba(255,255,255,0.1);border-left-color:#fff}#sidebar ul li.active>a{background:rgba(255,255,255,0.15);border-left-color:#fff;font-weight:600}#sidebar ul li a i{margin-right:10px;width:25px;text-align:center}#sidebar ul ul a{padding-left:50px!important;font-size:.9rem!important}#sidebar .sidebar-footer{padding:20px;position:absolute;bottom:0;width:100%;border-top:1px solid rgba(255,255,255,0.1)}#content{width:100%;padding:30px;min-height:100vh;transition:.3s;background:#f8f9fa}.navbar-custom{background:#fff;box-shadow:0 2px 10px rgba(0,0,0,0.05);border-radius:10px;margin-bottom:30px;padding:15px 25px}.page-header{padding-bottom:15px;margin:0 0 30px;border-bottom:3px solid #667eea}.page-header h1{font-size:2rem;font-weight:600;color:#333;margin:0}.page-header h1 i{color:#667eea;margin-right:10px}.page-header small{font-size:1rem;color:#6c757d;margin-left:10px}.card{border:none;border-radius:15px;box-shadow:0 5px 20px rgba(0,0,0,0.05);margin-bottom:30px}.card-header{background:#fff;border-bottom:2px solid #f0f0f0;padding:20px 25px;border-radius:15px 15px 0 0!important}.card-header h5{margin:0;font-weight:600;color:#333}.card-header h5 i{color:#667eea;margin-right:10px}.card-body{padding:25px}.btn-primary{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border:none;border-radius:30px;padding:10px 25px;transition:.3s}.btn-primary:hover{transform:translateY(-2px);box-shadow:0 5px 15px rgba(102,126,234,0.4)}.alert{border:none;border-radius:10px;padding:15px 20px;margin-bottom:30px}.form-group label{font-weight:500;color:#555}.form-control{border-radius:10px;border:1px solid #e1e5eb;padding:10px 15px;transition:.2s}.form-control:focus{border-color:#667eea;box-shadow:0 0 0 0.2rem rgba(102,126,234,0.25)}.badge{padding:6px 10px;border-radius:20px;font-weight:500;font-size:.75rem}.badge-success{background:#d4edda;color:#155724}.badge-warning{background:#fff3cd;color:#856404}.badge-info{background:#d1ecf1;color:#0c5460}.badge-danger{background:#f8d7da;color:#721c24}.member-info{border-left:4px solid #667eea;background:#f8f9fa;padding:15px;border-radius:10px;margin-bottom:20px}.member-info p{margin:5px 0}.member-info strong{color:#667eea}
     </style>
 </head>
 <body>
     <div class="wrapper">
-        <!-- Sidebar -->
         <nav id="sidebar">
             <div class="sidebar-header">
                 <i class="fas fa-dumbbell fa-3x mb-3"></i>
@@ -192,7 +193,6 @@ $page_title = 'Renew Membership - ' . APP_NAME;
             </div>
         </nav>
 
-        <!-- Page Content -->
         <div id="content">
             <nav class="navbar navbar-expand-lg navbar-custom">
                 <button type="button" id="sidebarCollapse" class="btn btn-outline-primary"><i class="fas fa-bars"></i> Menu</button>
@@ -224,9 +224,6 @@ $page_title = 'Renew Membership - ' . APP_NAME;
                 <?php if ($error): ?>
                     <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
                 <?php endif; ?>
-                <?php if ($success): ?>
-                    <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
-                <?php endif; ?>
                 <?php Session::displayFlash(); ?>
 
                 <div class="page-header">
@@ -244,19 +241,18 @@ $page_title = 'Renew Membership - ' . APP_NAME;
                                 <div class="member-info">
                                     <p><strong>Name:</strong> <?php echo htmlspecialchars($member['full_name']); ?></p>
                                     <p><strong>Email:</strong> <?php echo htmlspecialchars($member['email']); ?></p>
-                                    <p><strong>Phone:</strong> <?php echo htmlspecialchars($member['phone'] ?? 'N/A'); ?></p>
-                                    <p><strong>Current Membership:</strong> 
-                                        <?php if ($member['plan_name']): ?>
-                                            <span class="badge badge-info"><?php echo htmlspecialchars($member['plan_name']); ?></span>
+                                    <p><strong>Current Plan:</strong> 
+                                        <?php if ($member['membership_type']): ?>
+                                            <span class="badge badge-info"><?php echo htmlspecialchars($member['membership_type']); ?></span>
                                         <?php else: ?>
                                             <span class="badge badge-warning">No active plan</span>
                                         <?php endif; ?>
                                     </p>
                                     <p><strong>Expiry Date:</strong> 
-                                        <?php if ($member['expiry_date']): ?>
-                                            <span class="badge badge-<?php echo (strtotime($member['expiry_date']) > time()) ? 'success' : 'danger'; ?>">
-                                                <?php echo date('d M Y', strtotime($member['expiry_date'])); ?>
-                                                <?php if (strtotime($member['expiry_date']) < time()): ?> (Expired)<?php endif; ?>
+                                        <?php if ($member['end_date']): ?>
+                                            <span class="badge badge-<?php echo (strtotime($member['end_date']) > time()) ? 'success' : 'danger'; ?>">
+                                                <?php echo date('d M Y', strtotime($member['end_date'])); ?>
+                                                <?php if (strtotime($member['end_date']) < time()): ?> (Expired)<?php endif; ?>
                                             </span>
                                         <?php else: ?>
                                             <span class="badge badge-secondary">Not set</span>
@@ -272,14 +268,14 @@ $page_title = 'Renew Membership - ' . APP_NAME;
                                             <?php foreach ($plans as $plan): ?>
                                                 <option value="<?php echo $plan['id']; ?>" data-price="<?php echo $plan['price']; ?>">
                                                     <?php echo htmlspecialchars($plan['plan_name']); ?> 
-                                                    (<?php echo $plan['duration_months']; ?> months - $<?php echo number_format($plan['price'], 2); ?>)
+                                                    (<?php echo $plan['duration_days']; ?> days - ₹<?php echo number_format($plan['price'], 2); ?>)
                                                 </option>
                                             <?php endforeach; ?>
                                         </select>
                                     </div>
 
                                     <div class="form-group">
-                                        <label for="amount_paid">Amount Paid ($) <span class="text-danger">*</span></label>
+                                        <label for="amount_paid">Amount Paid (₹) <span class="text-danger">*</span></label>
                                         <input type="number" step="0.01" name="amount_paid" id="amount_paid" class="form-control" required>
                                         <small class="form-text text-muted">Enter the amount received from member.</small>
                                     </div>
@@ -345,7 +341,6 @@ $page_title = 'Renew Membership - ' . APP_NAME;
                 $('#sidebar').toggleClass('active');
             });
 
-            // Auto-fill amount when plan selected
             $('#plan_id').on('change', function() {
                 var price = $(this).find(':selected').data('price');
                 if (price) {

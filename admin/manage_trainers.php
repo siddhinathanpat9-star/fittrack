@@ -284,8 +284,7 @@ $page_title = 'Manage Trainers - ' . APP_NAME;
                                             <th>Members</th>
                                             <th>Classes</th>
                                             <th>Status</th>
-                                            <th>Actions</th>
-                                         '</
+                                            <th>Actions</th></
                                     </thead>
                                     <tbody>
                                         <?php foreach ($trainers as $trainer): ?>
@@ -464,6 +463,6 @@ $page_title = 'Manage Trainers - ' . APP_NAME;
             e.preventDefault();
             $('#logoutModal').modal('show');
         }
-    </script>
+    </script>                               
 </body>
 </html>

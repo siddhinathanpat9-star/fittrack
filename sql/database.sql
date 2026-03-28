@@ -113,6 +113,7 @@ CREATE TABLE IF NOT EXISTS progress_tracking (
     recorded_date DATE NOT NULL,
     weight DECIMAL(5,2),
     body_fat DECIMAL(5,2),
+    muscle_mass DECIMAL(5,2),
     chest DECIMAL(5,2),
     waist DECIMAL(5,2),
     hips DECIMAL(5,2),

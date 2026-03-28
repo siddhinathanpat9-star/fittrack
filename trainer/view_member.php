@@ -442,7 +442,7 @@ $user_name = Session::userName();
                                     <?php foreach ($payments as $p): ?>
                                     <tr>
                                         <td><?php echo date('M d, Y', strtotime($p['payment_date'])); ?></td>
-                                        <td>$<?php echo number_format($p['amount'], 2); ?></td>
+                                        <td>₹<?php echo number_format($p['amount'], 2); ?></td>
                                         <td><?php echo ucfirst($p['payment_method']); ?></td>
                                         <td>
                                             <span class="badge badge-success"><?php echo ucfirst($p['status']); ?></span>

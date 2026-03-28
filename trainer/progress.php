@@ -65,10 +65,10 @@ if (isset($_GET['delete_id']) && $member && !$error) {
     if ($confirm) {
         try {
             // Verify the progress entry belongs to this member
-            $stmt = $pdo->prepare("SELECT id FROM member_progress WHERE id = :id AND member_id = :member_id");
+            $stmt = $pdo->prepare("SELECT id FROM progress_tracking WHERE id = :id AND member_id = :member_id");
             $stmt->execute(['id' => $delete_id, 'member_id' => $member_id]);
             if ($stmt->fetch()) {
-                $stmt = $pdo->prepare("DELETE FROM member_progress WHERE id = :id");
+                $stmt = $pdo->prepare("DELETE FROM progress_tracking WHERE id = :id");
                 $stmt->execute(['id' => $delete_id]);
                 Session::setFlash('success', 'Progress entry deleted successfully.');
             } else {
@@ -103,9 +103,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     if (empty($errors)) {
         try {
             $stmt = $pdo->prepare("
-                INSERT INTO member_progress (member_id, measurement_date, weight_kg, body_fat_percentage, 
-                muscle_mass_kg, chest_cm, waist_cm, hips_cm, notes, created_by)
-                VALUES (:member_id, :date, :weight, :body_fat, :muscle_mass, :chest, :waist, :hips, :notes, :created_by)
+                INSERT INTO progress_tracking (member_id, recorded_date, weight, body_fat, 
+                muscle_mass, chest, waist, hips, notes, created_at)
+                VALUES (:member_id, :date, :weight, :body_fat, :muscle_mass, :chest, :waist, :hips, :notes, NOW())
             ");
             $stmt->execute([
                 'member_id' => $member_id,
@@ -116,8 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 'chest' => $chest,
                 'waist' => $waist,
                 'hips' => $hips,
-                'notes' => $notes,
-                'created_by' => $trainer_id
+                'notes' => $notes
             ]);
             Session::setFlash('success', 'Progress entry added successfully.');
             header("Location: progress.php?member_id=" . $member_id);
@@ -135,9 +134,9 @@ if ($member && !$error) {
     try {
         // Get all progress entries for this member
         $stmt = $pdo->prepare("
-            SELECT * FROM member_progress 
+            SELECT * FROM progress_tracking 
             WHERE member_id = :member_id 
-            ORDER BY measurement_date DESC, created_at DESC
+            ORDER BY recorded_date DESC, created_at DESC
         ");
         $stmt->execute(['member_id' => $member_id]);
         $progress_entries = $stmt->fetchAll();
@@ -150,9 +149,9 @@ if ($member && !$error) {
         // Prepare data for weight chart (last 6 months or all entries)
         $chart_entries = array_reverse($progress_entries);
         foreach ($chart_entries as $entry) {
-            if ($entry['weight_kg'] !== null) {
-                $date_chart_labels[] = date('M d', strtotime($entry['measurement_date']));
-                $weight_chart_data[] = (float)$entry['weight_kg'];
+            if ($entry['weight'] !== null) {
+                $date_chart_labels[] = date('M d', strtotime($entry['recorded_date']));
+                $weight_chart_data[] = (float)$entry['weight'];
             }
         }
         // Limit to last 10 entries for readability
@@ -170,8 +169,8 @@ $initial_weight = null;
 $weight_change = null;
 if (!empty($progress_entries)) {
     $oldest = end($progress_entries);
-    $initial_weight = $oldest['weight_kg'];
-    $current_weight = $progress_entries[0]['weight_kg'];
+    $initial_weight = $oldest['weight'];
+    $current_weight = $progress_entries[0]['weight'];
     if ($initial_weight && $current_weight) {
         $weight_change = $current_weight - $initial_weight;
     }
@@ -320,7 +319,7 @@ $page_title = 'Member Progress - ' . htmlspecialchars($member ? $member['full_na
                             <div class="card stats-card bg-primary text-white">
                                 <div class="card-body">
                                     <div class="card-title">Current Weight</div>
-                                    <h2><?php echo $latest_progress && $latest_progress['weight_kg'] ? number_format($latest_progress['weight_kg'], 1) : '--'; ?> kg</h2>
+                                    <h2><?php echo $latest_progress && $latest_progress['weight'] ? number_format($latest_progress['weight'], 1) : '--'; ?> kg</h2>
                                     <i class="fas fa-weight-scale"></i>
                                     <small>Latest measurement</small>
                                 </div>
@@ -346,7 +345,7 @@ $page_title = 'Member Progress - ' . htmlspecialchars($member ? $member['full_na
                             <div class="card stats-card bg-info text-white">
                                 <div class="card-body">
                                     <div class="card-title">Body Fat %</div>
-                                    <h2><?php echo $latest_progress && $latest_progress['body_fat_percentage'] ? number_format($latest_progress['body_fat_percentage'], 1) . '%' : '--'; ?></h2>
+                                    <h2><?php echo $latest_progress && $latest_progress['body_fat'] ? number_format($latest_progress['body_fat'], 1) . '%' : '--'; ?></h2>
                                     <i class="fas fa-percent"></i>
                                     <small>Latest reading</small>
                                 </div>
@@ -412,13 +411,13 @@ $page_title = 'Member Progress - ' . htmlspecialchars($member ? $member['full_na
                                         <tbody>
                                             <?php foreach ($progress_entries as $entry): ?>
                                             <tr>
-                                                <td><?php echo date('M d, Y', strtotime($entry['measurement_date'])); ?></td>
-                                                <td><strong><?php echo $entry['weight_kg'] ? number_format($entry['weight_kg'], 1) : '-'; ?></strong></td>
-                                                <td><?php echo $entry['body_fat_percentage'] ? number_format($entry['body_fat_percentage'], 1) . '%' : '-'; ?></td>
-                                                <td><?php echo $entry['muscle_mass_kg'] ? number_format($entry['muscle_mass_kg'], 1) : '-'; ?></td>
-                                                <td><?php echo $entry['chest_cm'] ? number_format($entry['chest_cm'], 1) : '-'; ?></td>
-                                                <td><?php echo $entry['waist_cm'] ? number_format($entry['waist_cm'], 1) : '-'; ?></td>
-                                                <td><?php echo $entry['hips_cm'] ? number_format($entry['hips_cm'], 1) : '-'; ?></td>
+                                                <td><?php echo date('M d, Y', strtotime($entry['recorded_date'])); ?></td>
+                                                <td><strong><?php echo $entry['weight'] ? number_format($entry['weight'], 1) : '-'; ?></strong></td>
+                                                <td><?php echo $entry['body_fat'] ? number_format($entry['body_fat'], 1) . '%' : '-'; ?></td>
+                                                <td><?php echo $entry['muscle_mass'] ? number_format($entry['muscle_mass'], 1) : '-'; ?></td>
+                                                <td><?php echo $entry['chest'] ? number_format($entry['chest'], 1) : '-'; ?></td>
+                                                <td><?php echo $entry['waist'] ? number_format($entry['waist'], 1) : '-'; ?></td>
+                                                <td><?php echo $entry['hips'] ? number_format($entry['hips'], 1) : '-'; ?></td>
                                                 <td><?php echo htmlspecialchars(substr($entry['notes'], 0, 50) ?? '-'); ?></td>
                                                 <td>
                                                     <a href="?member_id=<?php echo $member_id; ?>&delete_id=<?php echo $entry['id']; ?>" 

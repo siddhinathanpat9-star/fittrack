@@ -378,10 +378,10 @@ $page_title = 'Add Trainer - ' . APP_NAME;
                                 </div>
                                 
                                 <div class="col-md-3 form-group">
-                                    <label for="hourly_rate">Hourly Rate ($) <span class="text-danger">*</span></label>
+                                    <label for="hourly_rate">Hourly Rate (₹) <span class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <div class="input-group-prepend">
-                                            <span class="input-group-text">$</span>
+                                            <span class="input-group-text">₹</span>
                                         </div>
                                         <input type="number" class="form-control" id="hourly_rate" name="hourly_rate" 
                                                value="<?php echo htmlspecialchars($_POST['hourly_rate'] ?? '0'); ?>" 

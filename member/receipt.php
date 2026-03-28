@@ -155,11 +155,11 @@ $page_title = 'Payment Receipt - ' . APP_NAME;
                 <div class="receipt-details">
                     <div class="detail-row">
                         <span class="detail-label">Member Name:</span>
-                        <span class="detail-value"><?php echo htmlspecialchars($payment['member_name']); ?></span>
+                        <span class="detail-value"><?php echo htmlspecialchars($payment['member_name'] ?? ''); ?></span>
                     </div>
                     <div class="detail-row">
                         <span class="detail-label">Member Email:</span>
-                        <span class="detail-value"><?php echo htmlspecialchars($payment['member_email']); ?></span>
+                        <span class="detail-value"><?php echo htmlspecialchars($payment['member_email'] ?? ''); ?></span>
                     </div>
                     <div class="detail-row">
                         <span class="detail-label">Payment Date:</span>
@@ -181,7 +181,7 @@ $page_title = 'Payment Receipt - ' . APP_NAME;
                     <?php endif; ?>
                     <div class="detail-row">
                         <span class="detail-label">Payment For:</span>
-                        <span class="detail-value"><?php echo htmlspecialchars($payment['payment_for']); ?></span>
+                        <span class="detail-value"><?php echo htmlspecialchars($payment['payment_for'] ?? ''); ?></span>
                     </div>
                     <div class="detail-row">
                         <span class="detail-label">Status:</span>

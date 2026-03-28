@@ -347,10 +347,6 @@ $page_title = $config['title'] . ' - ' . APP_NAME;
             </div>
 
             <hr class="my-4">
-
-            <p class="text-center mb-2">
-                Don't have an account? <a href="register.php?type=<?php echo $login_type; ?>" class="register-link">Register Here</a>
-            </p>
             <p class="text-center mb-0">
                 <a href="index.php" class="text-muted"><i class="fas fa-home mr-1"></i>Back to Home</a>
             </p>

@@ -957,10 +957,6 @@ try {
                                 <a class="dropdown-item" href="login.php?type=member">
                                     <i class="fas fa-user" style="color: var(--member);"></i> Member Login
                                 </a>
-                                <div class="dropdown-divider"></div>
-                                <a class="dropdown-item" href="register.php">
-                                    <i class="fas fa-user-plus"></i> Register
-                                </a>
                             </div>
                         </li>
                     <?php endif; ?>
@@ -1079,9 +1075,7 @@ try {
                 </div>
             </div>
             
-            <div class="text-center mt-5" data-aos="fade-up" data-aos-delay="400">
-                <p class="mb-0">New here? <a href="register.php" class="text-primary font-weight-bold">Create an account</a> to get started!</p>
-            </div>
+
         </div>
     </section>
 

@@ -86,8 +86,8 @@ $member_search = $_GET['member_search'] ?? '';
 
 // Build query for bookings
 $sql = "SELECT cb.*, 
-               c.class_name, c.day_of_week, c.start_time, c.end_time, c.max_capacity,
-               u.full_name as member_name, u.email as member_email, u.phone as member_phone,
+               c.class_name, c.day_of_week, c.start_time, c.end_time, c.capacity,
+               u.full_name as member_name, u.email as member_email,
                t.full_name as trainer_name
         FROM class_bookings cb
         JOIN classes c ON cb.class_id = c.id
