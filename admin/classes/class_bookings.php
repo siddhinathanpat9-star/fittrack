@@ -90,7 +90,8 @@ $sql = "SELECT cb.*,
                u.full_name as member_name, u.email as member_email,
                t.full_name as trainer_name
         FROM class_bookings cb
-        JOIN classes c ON cb.class_id = c.id
+        JOIN class_schedule cs ON cb.schedule_id = cs.id
+        JOIN classes c ON cs.class_id = c.id
         JOIN users u ON cb.member_id = u.id
         LEFT JOIN users t ON c.trainer_id = t.id
         WHERE 1=1";
@@ -98,7 +99,7 @@ $sql = "SELECT cb.*,
 $params = [];
 
 if ($class_id) {
-    $sql .= " AND cb.class_id = ?";
+    $sql .= " AND cs.class_id = ?";
     $params[] = $class_id;
 }
 
@@ -143,9 +144,9 @@ if ($class_id) {
     try {
         $stmt = $pdo->prepare("
             SELECT c.*, u.full_name as trainer_name,
-                   (SELECT COUNT(*) FROM class_bookings WHERE class_id = c.id) as total_bookings,
-                   (SELECT COUNT(*) FROM class_bookings WHERE class_id = c.id AND status = 'attended') as attended_count,
-                   (SELECT COUNT(*) FROM class_bookings WHERE class_id = c.id AND status = 'cancelled') as cancelled_count
+                   (SELECT COUNT(*) FROM class_bookings cb JOIN class_schedule cs ON cb.schedule_id = cs.id WHERE cs.class_id = c.id) as total_bookings,
+                   (SELECT COUNT(*) FROM class_bookings cb JOIN class_schedule cs ON cb.schedule_id = cs.id WHERE cs.class_id = c.id AND cb.status = 'attended') as attended_count,
+                   (SELECT COUNT(*) FROM class_bookings cb JOIN class_schedule cs ON cb.schedule_id = cs.id WHERE cs.class_id = c.id AND cb.status = 'cancelled') as cancelled_count
             FROM classes c
             LEFT JOIN users u ON c.trainer_id = u.id
             WHERE c.id = ?

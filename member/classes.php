@@ -38,26 +38,36 @@ if (isset($_POST['book_class'])) {
             if (!$stmt->fetch()) {
                 $error = "Class not found or inactive.";
             } else {
-                // Check if already booked
-                $stmt = $pdo->prepare("SELECT id FROM class_bookings WHERE class_id = ? AND member_id = ? AND booking_date = ?");
-                $stmt->execute([$class_id, $member_id, $booking_date]);
-                if ($stmt->fetch()) {
-                    $error = "You have already booked this class on that date.";
+                // Find the schedule for this class on the booking date
+                $stmt = $pdo->prepare("SELECT id, max_capacity FROM class_schedule WHERE class_id = ? AND schedule_date = ?");
+                $stmt->execute([$class_id, $booking_date]);
+                $schedule = $stmt->fetch();
+                
+                if (!$schedule) {
+                    $error = "This class is not scheduled for that date.";
                 } else {
-                    // Check capacity
-                    $stmt = $pdo->prepare("SELECT COUNT(*) FROM class_bookings WHERE class_id = ? AND booking_date = ?");
-                    $stmt->execute([$class_id, $booking_date]);
-                    $booked = $stmt->fetchColumn();
-                    $stmt = $pdo->prepare("SELECT max_capacity FROM classes WHERE id = ?");
-                    $stmt->execute([$class_id]);
-                    $max_capacity = $stmt->fetchColumn();
-                    if ($booked >= $max_capacity) {
-                        $error = "This class is full on that date.";
+                    $schedule_id = $schedule['id'];
+                    $max_capacity = $schedule['max_capacity'];
+                    
+                    // Check if already booked
+                    $stmt = $pdo->prepare("SELECT id FROM class_bookings WHERE schedule_id = ? AND member_id = ?");
+                    $stmt->execute([$schedule_id, $member_id]);
+                    if ($stmt->fetch()) {
+                        $error = "You have already booked this class on that date.";
                     } else {
-                        // Insert booking
-                        $stmt = $pdo->prepare("INSERT INTO class_bookings (class_id, member_id, booking_date, status) VALUES (?, ?, ?, 'booked')");
-                        $stmt->execute([$class_id, $member_id, $booking_date]);
-                        $success = "Class booked successfully!";
+                        // Check capacity
+                        $stmt = $pdo->prepare("SELECT COUNT(*) FROM class_bookings WHERE schedule_id = ?");
+                        $stmt->execute([$schedule_id]);
+                        $booked = $stmt->fetchColumn();
+                        
+                        if ($booked >= $max_capacity) {
+                            $error = "This class is full on that date.";
+                        } else {
+                            // Insert booking
+                            $stmt = $pdo->prepare("INSERT INTO class_bookings (schedule_id, member_id, booking_date, status) VALUES (?, ?, ?, 'confirmed')");
+                            $stmt->execute([$schedule_id, $member_id, $booking_date]);
+                            $success = "Class booked successfully!";
+                        }
                     }
                 }
             }
@@ -72,12 +82,17 @@ if (isset($_POST['cancel_booking'])) {
     $booking_id = (int)$_POST['booking_id'];
     try {
         // Ensure the booking belongs to this member and is in the future
-        $stmt = $pdo->prepare("SELECT cb.id, cb.booking_date FROM class_bookings cb WHERE cb.id = ? AND cb.member_id = ?");
+        $stmt = $pdo->prepare("
+            SELECT cb.id, cs.schedule_date 
+            FROM class_bookings cb 
+            INNER JOIN class_schedule cs ON cb.schedule_id = cs.id 
+            WHERE cb.id = ? AND cb.member_id = ?
+        ");
         $stmt->execute([$booking_id, $member_id]);
         $booking = $stmt->fetch();
         if (!$booking) {
             $error = "Booking not found.";
-        } elseif (strtotime($booking['booking_date']) < strtotime(date('Y-m-d'))) {
+        } elseif (strtotime($booking['schedule_date']) < strtotime(date('Y-m-d'))) {
             $error = "Cannot cancel past bookings.";
         } else {
             $stmt = $pdo->prepare("DELETE FROM class_bookings WHERE id = ?");
@@ -122,11 +137,18 @@ foreach ($classes as $c) {
 $my_bookings = [];
 try {
     $stmt = $pdo->prepare("
-        SELECT cb.*, c.class_name, c.start_time, c.end_time, c.day_of_week
+        SELECT cb.id AS booking_id,
+               cb.booking_date,
+               cs.schedule_date,
+               cs.start_time,
+               cs.end_time,
+               c.class_name,
+               c.day_of_week
         FROM class_bookings cb
-        JOIN classes c ON cb.class_id = c.id
-        WHERE cb.member_id = ? AND cb.booking_date >= CURDATE()
-        ORDER BY cb.booking_date, c.start_time
+        INNER JOIN class_schedule cs ON cb.schedule_id = cs.id
+        INNER JOIN classes c ON cs.class_id = c.id
+        WHERE cb.member_id = ? AND cs.schedule_date >= CURDATE()
+        ORDER BY cs.schedule_date, cs.start_time
         LIMIT 20
     ");
     $stmt->execute([$member_id]);
@@ -247,12 +269,12 @@ $page_title = 'Book Classes - ' . APP_NAME;
                                     <tbody>
                                         <?php foreach ($my_bookings as $b): ?>
                                         <tr>
-                                            <td><?php echo date('M d, Y', strtotime($b['booking_date'])) . ' (' . $b['day_of_week'] . ')'; ?></td>
+                                            <td><?php echo date('M d, Y', strtotime($b['schedule_date'])) . ' (' . $b['day_of_week'] . ')'; ?></td>
                                             <td><?php echo htmlspecialchars($b['class_name']); ?></td>
                                             <td><?php echo date('h:i A', strtotime($b['start_time'])) . ' - ' . date('h:i A', strtotime($b['end_time'])); ?></td>
                                             <td>
                                                 <form method="post" style="display:inline;">
-                                                    <input type="hidden" name="booking_id" value="<?php echo $b['id']; ?>">
+                                                    <input type="hidden" name="booking_id" value="<?php echo $b['booking_id']; ?>">
                                                     <button type="submit" name="cancel_booking" class="btn btn-sm btn-danger" onclick="return confirm('Cancel this booking?')">
                                                         <i class="fas fa-times"></i> Cancel
                                                     </button>
@@ -294,19 +316,28 @@ $page_title = 'Book Classes - ' . APP_NAME;
                                             </thead>
                                             <tbody>
                                                 <?php foreach ($classes_by_day[$day_of_week] as $class): 
-                                                    // Check if already booked
+                                                    // Check if already booked on this date
                                                     $already_booked = false;
                                                     foreach ($my_bookings as $b) {
-                                                        if ($b['class_id'] == $class['id'] && $b['booking_date'] == $day['date']) {
+                                                        if ($b['class_name'] == $class['class_name'] && $b['schedule_date'] == $day['date']) {
                                                             $already_booked = true;
                                                             break;
                                                         }
                                                     }
-                                                    // Check capacity
-                                                    $stmt = $pdo->prepare("SELECT COUNT(*) FROM class_bookings WHERE class_id = ? AND booking_date = ?");
-                                                    $stmt->execute([$class['id'], $day['date']]);
-                                                    $booked_count = $stmt->fetchColumn();
-                                                    $available = $booked_count < $class['max_capacity'];
+                                                    // Check capacity by finding the schedule and counting bookings
+                                                    $sched_stmt = $pdo->prepare("SELECT id FROM class_schedule WHERE class_id = ? AND schedule_date = ?");
+                                                    $sched_stmt->execute([$class['id'], $day['date']]);
+                                                    $schedule = $sched_stmt->fetch();
+                                                    
+                                                    if ($schedule) {
+                                                        $stmt = $pdo->prepare("SELECT COUNT(*) FROM class_bookings WHERE schedule_id = ?");
+                                                        $stmt->execute([$schedule['id']]);
+                                                        $booked_count = $stmt->fetchColumn();
+                                                        $available = $booked_count < $class['max_capacity'];
+                                                    } else {
+                                                        $booked_count = 0;
+                                                        $available = false;
+                                                    }
                                                 ?>
                                                 <tr>
                                                     <td><strong><?php echo htmlspecialchars($class['class_name']); ?></strong></td>

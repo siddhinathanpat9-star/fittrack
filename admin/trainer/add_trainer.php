@@ -122,7 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $functions->logActivity(Session::userId(), 'add_trainer', "Added new trainer: $full_name");
         
         Session::setFlash('success', 'Trainer added successfully!');
-        header('Location: manage_trainers.php');
+        header('Location: ../manage_trainers.php');
         exit();
         
     } catch (Exception $e) {

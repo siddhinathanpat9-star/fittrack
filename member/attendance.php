@@ -92,7 +92,12 @@ try {
 }
 
 // Get statistics
-$stats = [];
+$stats = [
+    'total' => 0,
+    'month' => 0,
+    'avg_checkin' => 'N/A',
+    'most_common' => 'N/A'
+];
 try {
     // Total visits
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM attendance WHERE user_id = ?");

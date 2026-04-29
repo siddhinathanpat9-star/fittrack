@@ -28,9 +28,9 @@ try {
     $stmt = $pdo->prepare("
         SELECT 
             c.*,
-            (SELECT COUNT(*) FROM class_bookings WHERE class_id = c.id) as total_bookings,
-            (SELECT COUNT(*) FROM class_bookings WHERE class_id = c.id AND booking_date >= CURDATE()) as upcoming_bookings,
-            (SELECT COUNT(*) FROM class_bookings WHERE class_id = c.id AND booking_date = CURDATE()) as today_bookings
+            (SELECT COUNT(*) FROM class_bookings cb JOIN class_schedule cs ON cb.schedule_id = cs.id WHERE cs.class_id = c.id) as total_bookings,
+            (SELECT COUNT(*) FROM class_bookings cb JOIN class_schedule cs ON cb.schedule_id = cs.id WHERE cs.class_id = c.id AND cb.booking_date >= CURDATE()) as upcoming_bookings,
+            (SELECT COUNT(*) FROM class_bookings cb JOIN class_schedule cs ON cb.schedule_id = cs.id WHERE cs.class_id = c.id AND cb.booking_date = CURDATE()) as today_bookings
         FROM classes c
         WHERE c.trainer_id = ?
         ORDER BY FIELD(c.day_of_week, 'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'), c.start_time

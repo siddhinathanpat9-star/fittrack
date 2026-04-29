@@ -43,7 +43,7 @@ if (isset($_GET['delete'])) {
         $class_id = (int)$_GET['delete'];
         
         // Check if class has bookings
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM class_bookings WHERE class_id = ?");
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM class_bookings cb JOIN class_schedule cs ON cb.schedule_id = cs.id WHERE cs.class_id = ?");
         $stmt->execute([$class_id]);
         $booking_count = $stmt->fetchColumn();
         
@@ -74,8 +74,8 @@ $search_term = $_GET['search'] ?? '';
 
 // Build query for classes
 $sql = "SELECT c.*, u.full_name as trainer_name,
-        (SELECT COUNT(*) FROM class_bookings WHERE class_id = c.id) as total_bookings,
-        (SELECT COUNT(*) FROM class_bookings WHERE class_id = c.id AND booking_date >= CURDATE()) as upcoming_bookings
+        (SELECT COUNT(*) FROM class_bookings cb JOIN class_schedule cs ON cb.schedule_id = cs.id WHERE cs.class_id = c.id) as total_bookings,
+        (SELECT COUNT(*) FROM class_bookings cb JOIN class_schedule cs ON cb.schedule_id = cs.id WHERE cs.class_id = c.id AND cb.booking_date >= CURDATE()) as upcoming_bookings
         FROM classes c
         LEFT JOIN users u ON c.trainer_id = u.id
         WHERE 1=1";

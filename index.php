@@ -1088,7 +1088,7 @@ try {
                         <div class="stat-icon">
                             <i class="fas fa-users"></i>
                         </div>
-                        <div class="stat-number"><?php echo number_format(max($stats['members'], 5000)); ?>+</div>
+                        <div class="stat-number"><?php echo number_format(max($stats['members'], 500)); ?>+</div>
                         <div class="stat-label">Happy Members</div>
                     </div>
                 </div>
@@ -1097,7 +1097,7 @@ try {
                         <div class="stat-icon">
                             <i class="fas fa-user-tie"></i>
                         </div>
-                        <div class="stat-number"><?php echo number_format(max($stats['trainers'], 50)); ?>+</div>
+                        <div class="stat-number"><?php echo number_format(max($stats['trainers'], 10)); ?>+</div>
                         <div class="stat-label">Expert Trainers</div>
                     </div>
                 </div>
@@ -1110,7 +1110,7 @@ try {
                         <div class="stat-label">Weekly Classes</div>
                     </div>
                 </div>
-                <div class="col-lg-3 col-md-6" data-aos="fade-up" data-aos-delay="400">
+                <div class="col-lg-3 col-md-6" data-aos="fade-up" data-aos-delay="10">
                     <div class="stat-card">
                         <div class="stat-icon">
                             <i class="fas fa-clock"></i>
@@ -1215,7 +1215,7 @@ try {
                             <div class="row">
                                 <div class="col-4">
                                     <div class="stat-item">
-                                        <div class="stat-number">15+</div>
+                                        <div class="stat-number">10div>
                                         <div class="stat-label">Years</div>
                                     </div>
                                 </div>

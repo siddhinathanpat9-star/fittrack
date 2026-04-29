@@ -67,7 +67,7 @@ if (isset($_POST['delete_member'])) {
         $stmt->execute([$user_id]);
         
         // Attendance
-        $stmt = $pdo->prepare("DELETE FROM attendance WHERE user_id = ?");
+        $stmt = $pdo->prepare("DELETE FROM attendance_records WHERE user_id = ?");
         $stmt->execute([$user_id]);
         
         // Workout plans (if table exists)

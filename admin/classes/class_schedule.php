@@ -38,6 +38,9 @@ if (isset($_GET['cancel_booking'])) {
 $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 $schedule = [];
 $class_counts = [];
+$total_classes = 0;
+$total_trainers = 0;
+$upcoming_bookings = [];
 
 // Get time slots for each day
 try {
@@ -46,8 +49,8 @@ try {
             SELECT c.*, 
                    u.full_name as trainer_name,
                    u.id as trainer_id,
-                   (SELECT COUNT(*) FROM class_bookings WHERE class_id = c.id AND booking_date >= CURDATE()) as upcoming_bookings,
-                   (SELECT COUNT(*) FROM class_bookings WHERE class_id = c.id AND booking_date = CURDATE()) as today_bookings
+                   (SELECT COUNT(*) FROM class_bookings cb JOIN class_schedule cs ON cb.schedule_id = cs.id WHERE cs.class_id = c.id AND cb.booking_date >= CURDATE()) as upcoming_bookings,
+                   (SELECT COUNT(*) FROM class_bookings cb JOIN class_schedule cs ON cb.schedule_id = cs.id WHERE cs.class_id = c.id AND cb.booking_date = CURDATE()) as today_bookings
             FROM classes c
             LEFT JOIN users u ON c.trainer_id = u.id
             WHERE c.day_of_week = ? AND c.status = 'active'
@@ -66,7 +69,8 @@ try {
     $stmt = $pdo->prepare("
         SELECT cb.*, c.class_name, c.start_time, c.end_time, u.full_name as member_name, c.day_of_week
         FROM class_bookings cb
-        JOIN classes c ON cb.class_id = c.id
+        JOIN class_schedule cs ON cb.schedule_id = cs.id
+        JOIN classes c ON cs.class_id = c.id
         JOIN users u ON cb.member_id = u.id
         WHERE cb.booking_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
         AND cb.status = 'booked'
@@ -284,8 +288,12 @@ $page_title = 'Class Schedule - ' . APP_NAME;
                                 <div class="card-title">Busiest Day</div>
                                 <h2>
                                     <?php 
-                                    $max_day = array_search(max($class_counts), $class_counts);
-                                    echo $max_day ? substr($max_day, 0, 3) : 'N/A';
+                                    if (!empty($class_counts)) {
+                                        $max_day = array_search(max($class_counts), $class_counts);
+                                        echo $max_day ? substr($max_day, 0, 3) : 'N/A';
+                                    } else {
+                                        echo 'N/A';
+                                    }
                                     ?>
                                 </h2>
                                 <i class="fas fa-chart-line"></i>

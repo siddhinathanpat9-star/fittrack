@@ -118,7 +118,7 @@ class Functions {
     public function getClassSchedule($limit = null) {
         try {
             $sql = "SELECT c.*, u.full_name as trainer_name,
-                    (SELECT COUNT(*) FROM class_bookings cb WHERE cb.class_id = c.id AND cb.booking_date = CURDATE()) as current_bookings
+                    (SELECT COUNT(*) FROM class_bookings cb JOIN class_schedule cs ON cb.schedule_id = cs.id WHERE cs.class_id = c.id AND cb.booking_date = CURDATE()) as current_bookings
                     FROM classes c
                     LEFT JOIN users u ON c.trainer_id = u.id
                     WHERE c.status = 'active'

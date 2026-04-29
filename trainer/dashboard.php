@@ -62,8 +62,8 @@ $my_classes = [];
 try {
     $stmt = $pdo->prepare("
         SELECT c.*,
-               (SELECT COUNT(*) FROM class_bookings WHERE class_id = c.id AND booking_date >= CURDATE()) as upcoming_bookings,
-               (SELECT COUNT(*) FROM class_bookings WHERE class_id = c.id AND booking_date = CURDATE()) as today_bookings
+               (SELECT COUNT(*) FROM class_bookings cb JOIN class_schedule cs ON cb.schedule_id = cs.id WHERE cs.class_id = c.id AND cb.booking_date >= CURDATE()) as upcoming_bookings,
+               (SELECT COUNT(*) FROM class_bookings cb JOIN class_schedule cs ON cb.schedule_id = cs.id WHERE cs.class_id = c.id AND cb.booking_date = CURDATE()) as today_bookings
         FROM classes c
         WHERE c.trainer_id = ? AND c.status = 'active'
         ORDER BY FIELD(c.day_of_week, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'), c.start_time
@@ -81,7 +81,7 @@ $today = date('l'); // e.g., 'Monday'
 try {
     $stmt = $pdo->prepare("
         SELECT c.*,
-               (SELECT COUNT(*) FROM class_bookings WHERE class_id = c.id AND booking_date = CURDATE()) as booked_count
+               (SELECT COUNT(*) FROM class_bookings cb JOIN class_schedule cs ON cb.schedule_id = cs.id WHERE cs.class_id = c.id AND cb.booking_date = CURDATE()) as booked_count
         FROM classes c
         WHERE c.trainer_id = ? AND c.day_of_week = ? AND c.status = 'active'
         ORDER BY c.start_time
@@ -101,7 +101,8 @@ try {
                u.full_name as member_name,
                cb.status as booking_status
         FROM class_bookings cb
-        JOIN classes c ON cb.class_id = c.id
+        JOIN class_schedule cs ON cb.schedule_id = cs.id
+        JOIN classes c ON cs.class_id = c.id
         JOIN users u ON cb.member_id = u.id
         WHERE c.trainer_id = ? AND cb.booking_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
         ORDER BY cb.booking_date, c.start_time
@@ -470,7 +471,7 @@ $page_title = 'Trainer Dashboard - ' . APP_NAME;
                                 </a>
                             </div>
                             <div class="col-md-3 col-6 mb-3">
-                                <a href="create_workout.php" class="btn btn-outline-success btn-block py-3">
+                                <a href="workout_plans.php" class="btn btn-outline-success btn-block py-3">
                                     <i class="fas fa-dumbbell fa-2x mb-2"></i><br>Create Workout Plan
                                 </a>
                             </div>

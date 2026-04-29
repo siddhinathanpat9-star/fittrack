@@ -16,8 +16,26 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
+-- Table structure for table `class_bookings`
+--
 
-
+DROP TABLE IF EXISTS `class_bookings`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `class_bookings` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `class_id` int(11) NOT NULL,
+  `member_id` int(11) NOT NULL,
+  `booking_date` date NOT NULL,
+  `status` enum('booked','attended','cancelled','no_show') DEFAULT 'booked',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_booking` (`class_id`,`member_id`,`booking_date`),
+  KEY `member_id` (`member_id`),
+  CONSTRAINT `class_bookings_ibfk_1` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `class_bookings_ibfk_2` FOREIGN KEY (`member_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `class_schedule`
@@ -41,7 +59,7 @@ CREATE TABLE `class_schedule` (
   KEY `idx_class` (`class_id`),
   CONSTRAINT `class_schedule_ibfk_1` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `classes`
@@ -66,7 +84,7 @@ CREATE TABLE `classes` (
   KEY `trainer_id` (`trainer_id`),
   CONSTRAINT `classes_ibfk_1` FOREIGN KEY (`trainer_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `email_log`
@@ -88,7 +106,7 @@ CREATE TABLE `email_log` (
   KEY `user_id` (`user_id`),
   KEY `sent_at` (`sent_at`)
 ) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `equipment`
@@ -109,7 +127,7 @@ CREATE TABLE `equipment` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `exercises`
@@ -129,7 +147,7 @@ CREATE TABLE `exercises` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `members`
@@ -156,7 +174,7 @@ CREATE TABLE `members` (
   CONSTRAINT `members_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `members_ibfk_2` FOREIGN KEY (`assigned_trainer_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `membership_plans`
@@ -185,7 +203,7 @@ CREATE TABLE `membership_plans` (
   `sort_order` int(11) DEFAULT 0,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `messages`
@@ -210,7 +228,7 @@ CREATE TABLE `messages` (
   CONSTRAINT `messages_ibfk_1` FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `messages_ibfk_2` FOREIGN KEY (`recipient_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `notification_recipients`
@@ -231,7 +249,7 @@ CREATE TABLE `notification_recipients` (
   CONSTRAINT `notification_recipients_ibfk_1` FOREIGN KEY (`notification_id`) REFERENCES `notifications` (`id`) ON DELETE CASCADE,
   CONSTRAINT `notification_recipients_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `notifications`
@@ -251,7 +269,7 @@ CREATE TABLE `notifications` (
   KEY `sender_id` (`sender_id`),
   CONSTRAINT `notifications_ibfk_1` FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `password_resets`
@@ -270,7 +288,7 @@ CREATE TABLE `password_resets` (
   KEY `idx_email` (`email`),
   KEY `idx_token` (`token`)
 ) ENGINE=InnoDB AUTO_INCREMENT=49 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `payments`
@@ -301,7 +319,7 @@ CREATE TABLE `payments` (
   CONSTRAINT `payments_ibfk_1` FOREIGN KEY (`member_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `payments_ibfk_2` FOREIGN KEY (`recorded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `progress_tracking`
@@ -326,7 +344,7 @@ CREATE TABLE `progress_tracking` (
   UNIQUE KEY `unique_member_date` (`member_id`,`recorded_date`),
   CONSTRAINT `progress_tracking_ibfk_1` FOREIGN KEY (`member_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `settings`
@@ -345,7 +363,7 @@ CREATE TABLE `settings` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`setting_key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `trainers`
@@ -366,7 +384,7 @@ CREATE TABLE `trainers` (
   UNIQUE KEY `user_id` (`user_id`),
   CONSTRAINT `trainers_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `users`
@@ -392,7 +410,7 @@ CREATE TABLE `users` (
   UNIQUE KEY `username` (`username`),
   UNIQUE KEY `email` (`email`)
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `workout_plans`
@@ -419,60 +437,7 @@ CREATE TABLE `workout_plans` (
   CONSTRAINT `workout_plans_ibfk_1` FOREIGN KEY (`trainer_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `workout_plans_ibfk_2` FOREIGN KEY (`member_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-
---
--- Table structure for table `class_bookings`
---
-DROP TABLE IF EXISTS `class_bookings`;
-CREATE TABLE `class_bookings` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `schedule_id` int(11) NOT NULL,
-  `member_id` int(11) NOT NULL,
-  `booking_date` date NOT NULL,
-  `status` enum('confirmed','attended','cancelled','no_show') DEFAULT 'confirmed',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_booking` (`schedule_id`,`member_id`),
-  KEY `member_id` (`member_id`),
-  CONSTRAINT `class_bookings_ibfk_1` FOREIGN KEY (`schedule_id`) REFERENCES `class_schedule` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `class_bookings_ibfk_2` FOREIGN KEY (`member_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Table structure for table `attendance`
---
-DROP TABLE IF EXISTS `attendance`;
-CREATE TABLE `attendance` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) DEFAULT NULL,
-  `check_in` datetime DEFAULT NULL,
-  `check_out` datetime DEFAULT NULL,
-  `date` date DEFAULT NULL,
-  `status` enum('present','absent','late') DEFAULT 'present',
-  PRIMARY KEY (`id`),
-  KEY `user_id` (`user_id`),
-  CONSTRAINT `attendance_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Table structure for table `workouts`
---
-DROP TABLE IF EXISTS `workouts`;
-CREATE TABLE `workouts` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NOT NULL,
-  `workout_type` varchar(100) DEFAULT NULL,
-  `duration_minutes` int(11) DEFAULT NULL,
-  `calories_burned` int(11) DEFAULT NULL,
-  `notes` text DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `workout_date` date DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `idx_user_date` (`user_id`,`created_at`),
-  CONSTRAINT `workouts_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
+/*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
